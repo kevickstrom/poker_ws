@@ -13,16 +13,16 @@ import pygame, sys
 
 BACKGROUND = (30, 92, 58)
 WINDOW_WIDTH = 1800
-WINDOW_HEIGHT = 500
+WINDOW_HEIGHT = 600
 
 class manageTableGUI(Node):
     def __init__(self):
-        super().__init__('table_manager')
+        super().__init__('table_visualizer')
         self.gameStateSub = self.create_subscription(GameState, 'game_state', self.gameState_cb, 10)
         self.gameState = None
 
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption("Table Manager")
+        pygame.display.set_caption("Table Visualizer")
 
     def gameState_cb(self, gameState):
         self.gameState = gameState
