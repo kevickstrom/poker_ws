@@ -14,6 +14,7 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*.py'))),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*.xml'))),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*.yaml'))),
+        (os.path.join('share', package_name, 'assets'), glob('assets/**/*', recursive=True)),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

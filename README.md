@@ -1,5 +1,7 @@
 ### Kyle Vickstrom Live Poker Hand Tracker ROB499
 
+<img src="poker/assets/node_sketch.jpg"  width="50%"/>  
+
 This is meant to be a project for ROB499 which I can use outside the class.  
 Using ROS2, this will visualize the current state of a poker table, allowing for easy game management and tracking.  
 
