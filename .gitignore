@@ -1,6 +1,6 @@
 /*
-!/src/poker/
-!/src/poker_msgs/
+!poker/
+!poker_msgs/
 !.gitignore
 !.github
 !/src/README.md
