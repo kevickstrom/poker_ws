@@ -9,5 +9,8 @@ One window will be for game management where the table and gameplay can be confi
 Another window will visualize the state of the table--visible cards, those in the hand, whose turn it is, pot size, etc.  
 
 Current progress:
-    Init commit
-        pygame window created and gamestate msg package
+   Game will be played via console UI (cmd like inputs)
+
+   Next step:
+   Arduino player action puck (3 button inputs)
+   Camera, picture, ocr nodes for table cards
