@@ -27,6 +27,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/GameLog.msg"
   "msg/GameState.msg"
   "msg/Player.msg"
   "srv/NewGame.srv"

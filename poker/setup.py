@@ -25,8 +25,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'manageTable = poker.manageTableGUI:main',
-            'visualizeTable = poker.visualizeTableGUI:main'
+            'poker_console = poker.poker_console:createConsole',
+            'visualizeTable = poker.visualizeTableGUI:main',
+            'poker_game = poker.poker_game:createGame'
         ],
     },
 )

@@ -49,7 +49,7 @@ class PokerConsole(Node):
         stdscr.nodelay(True)
         stdscr.refresh()
         self.log("Press SPACE to start...")
-        #print("Press SPACE to start...")
+
         while rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
 
@@ -70,7 +70,7 @@ class PokerConsole(Node):
                         self.started = True
                         self.log("Starting game...")
                         self.newGame_request()
-                    #self.get_logger().info("Starting game...")
+                    self.get_logger().info("Starting game...")
                 
                 elif key == 10: # enter key
                     self.log("enter key")
@@ -245,16 +245,14 @@ class PokerConsole(Node):
             return
         return
 
-    def newGame_request(self, score: tuple[int, int]):
+    def newGame_request(self):
         """
-        Service request to game node to create a new game. Send (0, 0) for first start otherwise score = (cpu,player) scores
+        Service request to game node to create a new game.
         """
         if not self.newGame_client.wait_for_service(timeout_sec=1):
             self.log("Game node not active.")
             return
-        newScore = [score[0], score[1]]
         request = NewGame.Request()
-        request.score = newScore
         self.NewGame_response = self.newGame_client.call_async(request)
         self.log("Requested new game")
 
@@ -298,10 +296,7 @@ class PokerConsole(Node):
         """
         Subscriber callback to the GameState topic
         """
-        self.score = msg.score
-        for i in range(0, 9, 3):
-            row = msg.board[i:i+3]
-            self.log(str(row))
+        self.log("received updated GameState")
 
 def createConsole(args=None):
     rclpy.init(args=args)

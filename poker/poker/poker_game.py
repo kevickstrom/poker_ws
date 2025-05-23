@@ -13,7 +13,8 @@ from rclpy.action import ActionClient
 from rclpy.time import Time
 import curses
 
-from poker_msgs.msg import GameLog, GameState
+from poker_msgs.msg import GameLog, GameState, Player
+from poker_msgs.srv import NewGame, PlayerTurn
 
 class PokerGame(Node):
     def __init__(self):
@@ -30,13 +31,29 @@ class PokerGame(Node):
         This clears the game state and resets.
         Service Server.
 
-        Doesn't do much yet.
+        Starts a completely new table with blank players
         """
         newGame = GameState()
+        newGame.seats = 10
+        # init player list of nobodies
+        player_list = []
+        for i in range(newGame.seats):
+            nullPlayer = Player()
+            nullPlayer.name = "Empty"
+            nullPlayer.seat_pos = i
+            nullPlayer.stack = 0.0
+            nullPlayer.buy_in = 0.0
+            nullPlayer.afk = True
+            player_list.append(nullPlayer)
+        newGame.active_players = player_list
+
+        newGame.dealer_index = 0
+        newGame.hand_state = 'waiting'
 
         self.GameState = newGame
 
         self.pubGame.publish(newGame)
+        self.log("New game created.")
 
         return response
 
