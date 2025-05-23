@@ -1,0 +1,4 @@
+int32 seat_pos
+Player player
+---
+bool added

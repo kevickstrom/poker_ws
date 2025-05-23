@@ -17,8 +17,8 @@ from rclpy.action import ActionClient
 from rclpy.time import Time
 import curses
 
-from poker_msgs.msg import GameLog, GameState
-from poker_msgs.srv import NewGame, PlayerTurn
+from poker_msgs.msg import GameLog, GameState, Player
+from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
 
 class PokerConsole(Node):
     def __init__(self):
@@ -31,6 +31,7 @@ class PokerConsole(Node):
         self.subLog = self.create_subscription(GameLog, 'game_log', self.logsubscriber, 10)
         self.subGame = self.create_subscription(GameState, 'game_state', self.readGameState, 10)
         self.newGame_client = self.create_client(NewGame, 'new_game')
+        self.addPlayer_client = self.create_client(AddPlayer, 'add_player')
         self.newTurn_client = self.create_client(PlayerTurn, 'player_turn')
 
         # self.arduinoClient = self.create_client(SerialConnect, 'serial_connect')
@@ -212,10 +213,14 @@ class PokerConsole(Node):
 
         self.log(f"[CMD]: {cmd}  [ARGS]: {args}")
             
+        # leftover from trivia, tictactoe, will be used for camera or action puck
         if cmd == "connect":
             self.log('connect is not implemented')
 
+        # enter player action
         elif cmd == "turn":
+            self.log("turn is not implemented")
+            return
             if len(args) != 2:
                 self.log("USAGE: turn <seat_pos> <action> <amount>")
                 return
@@ -227,17 +232,27 @@ class PokerConsole(Node):
                 return
             self.newTurn_request(player_id, loc)
 
+        # request new game
         elif cmd == "newgame":
-            if len(args) != 2:
-                self.log("USAGE: newgame <samiscore> <myscore>")
+            self.log("Deleting old game...")
+            self.newGame_request()
+
+        # add player
+        elif cmd == "add":
+            if len(args) < 3:
+                self.log("USAGE: add <player_name> <buy_in> <seat_pos> (optional)<afk>")
                 return
             try:
-                samiscore = int(args[0])
-                myscore = int(args[1])
+                name = str(args[0])
+                buy_in = float(args[1])
+                seat_pos = int(args[2])
+                if len(args)==4:
+                    afk = bool(args[3])
+                    self.addPlayer_request(name, buy_in, seat_pos, afk)
+                self.addPlayer_request(name, buy_in, seat_pos)
             except ValueError:
-                self.log("scores must be int")
+                self.log("Invalid types")
                 return
-            self.newGame_request((samiscore, myscore))
 
 
         else:
@@ -271,6 +286,24 @@ class PokerConsole(Node):
         self.newTurn_response = self.newTurn_client.call_async(newTurn)
         self.log(f"Requested turn for id {player_id}, location {location}")
 
+    def addPlayer_request(self, name:str, buy_in:float, seat_pos:int, afk:bool = False):
+        """
+        Service request to add a new player to the table
+        Swapping seats should be done with the move service call
+        Player seat pos is handled by the game manager, the seat_pos argument here is for the request.
+        """
+        newPlayer = Player()
+        newPlayer.name = name
+        newPlayer.buy_in = buy_in
+        newPlayer.stack = buy_in
+        newPlayer.afk = afk
+
+        addPlayer = AddPlayer.Request()
+        addPlayer.seat_pos = seat_pos
+        addPlayer.player = newPlayer
+
+        self.addPlayer_response = self.addPlayer_client.call_async(addPlayer)
+        self.log(f"Requested to add player {newPlayer.name}")
 
 
 

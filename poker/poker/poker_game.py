@@ -14,7 +14,7 @@ from rclpy.time import Time
 import curses
 
 from poker_msgs.msg import GameLog, GameState, Player
-from poker_msgs.srv import NewGame, PlayerTurn
+from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
 
 class PokerGame(Node):
     def __init__(self):
@@ -24,6 +24,7 @@ class PokerGame(Node):
         self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
         self.pubGame = self.create_publisher(GameState, 'game_state', 10)
         self.newGame_srv = self.create_service(NewGame, 'new_game', self.newGame)
+        self.addPlayer_srv = self.create_service(AddPlayer, 'add_player', self.addPlayer)
         self.playerTurn_srv = self.create_service(PlayerTurn, 'player_turn', self.playerTurn)
 
     def newGame(self, request, response):
@@ -46,6 +47,7 @@ class PokerGame(Node):
             nullPlayer.afk = True
             player_list.append(nullPlayer)
         newGame.active_players = player_list
+        newGame.afk_players = []
 
         newGame.dealer_index = 0
         newGame.hand_state = 'waiting'
@@ -55,6 +57,42 @@ class PokerGame(Node):
         self.pubGame.publish(newGame)
         self.log("New game created.")
 
+        return response
+
+    def addPlayer(self, request, response):
+        """
+        Service call to add players to the table.
+        If player set to afk, will be added to afk list
+        Otherwise will attempt to be placed at requested seat pos
+        If seat is already full, request will be denied.
+        Proper usage would be to init player to afk list then move players to their correct seats.
+        """
+        # TODO: init blind 0,1,2,3 based on dealer index
+        newPlayer = request.player
+        # Add to afk list
+        if newPlayer.afk:
+            self.GameState.afk_players.append(newPlayer)
+            newPlayer.seat_pos = 99
+            response.added = True
+            self.log(f"Added {newPlayer.name} to afk list with buy in {newPlayer.buy_in}.")
+        else:
+            # check if seat occupied
+            if self.GameState.active_players[request.seat_pos].name == "Empty":
+                self.GameState.active_players[request.seat_pos] = newPlayer
+                newPlayer.seat_pos = request.seat_pos
+                newPlayer.afk = False
+                self.log(f"Added {newPlayer.name} to seat {request.seat_pos} with buy in {newPlayer.buy_in}.")
+                response.added = True
+            else:
+                # if occupied add to afk list for user to manually move
+                newPlayer.seat_pos = 99
+                newPlayer.afk = True
+                self.GameState.afk_players.append(newPlayer)
+                self.log(f"Seat occupied. Added {newPlayer.name} to afk list with buy in {newPlayer.buy_in}.")
+                response.added = False
+
+        # publish the new state
+        self.pubGame.publish(self.GameState)
         return response
 
 

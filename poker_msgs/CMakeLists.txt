@@ -32,6 +32,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Player.msg"
   "srv/NewGame.srv"
   "srv/PlayerTurn.srv"
+  "srv/AddPlayer.srv"
   DEPENDENCIES builtin_interfaces
  )
 
