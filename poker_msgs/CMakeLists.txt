@@ -33,6 +33,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/NewGame.srv"
   "srv/PlayerTurn.srv"
   "srv/AddPlayer.srv"
+  "srv/MovePlayer.srv"
+  "srv/AdvanceHand.srv"
   DEPENDENCIES builtin_interfaces
  )
 

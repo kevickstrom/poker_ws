@@ -1,3 +1,5 @@
-# inputs
+# bet, call, fold
+string action
+float32 amount
 ---
 # outputs

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#
+# This will likely be unused.
 #
 #
 #

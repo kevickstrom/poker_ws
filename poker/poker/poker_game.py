@@ -15,6 +15,7 @@ import curses
 
 from poker_msgs.msg import GameLog, GameState, Player
 from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
+from poker_msgs.srv import AdvanceHand
 
 class PokerGame(Node):
     def __init__(self):
@@ -26,6 +27,7 @@ class PokerGame(Node):
         self.newGame_srv = self.create_service(NewGame, 'new_game', self.newGame)
         self.addPlayer_srv = self.create_service(AddPlayer, 'add_player', self.addPlayer)
         self.playerTurn_srv = self.create_service(PlayerTurn, 'player_turn', self.playerTurn)
+        self.advanceHand_srv = self.create_service(AdvanceHand, 'advance_hand', self.advanceHand)
 
     def newGame(self, request, response):
         """
@@ -48,9 +50,11 @@ class PokerGame(Node):
             player_list.append(nullPlayer)
         newGame.active_players = player_list
         newGame.afk_players = []
+        newGame.table_cards = []
 
         newGame.dealer_index = 0
         newGame.hand_state = 'waiting'
+        newGame.big_blind = 0.20
 
         self.GameState = newGame
 
@@ -95,6 +99,52 @@ class PokerGame(Node):
         self.pubGame.publish(self.GameState)
         return response
 
+    def advanceHand(self, request, response):
+        """
+        Service call to change hand state.
+        Give new hand state and the table cards for that state
+        """
+        # start a new hand waiting -> preflop
+        if self.GameState.hand_state == 0:
+            self.GameState.hand_state +=1
+            # add all the players to the hand
+            for player in self.GameState.active_players:
+                player.in_hand = True
+        # everyone folded so assign win
+        elif request.folded:
+            # TODO: Assign win
+            # self.GameState.winner =
+            self.newHand()
+        # advance to the next stage
+        elif self.GameState.pot_good:
+            self.GameState.table_cards = request.table_cards
+            # check if finished -> reset for new hand
+            if self.GameState.hand_state == 5:
+                self.newHand()
+                return response
+            # check if river -> finished
+            elif self.GameState.hand_state == 4:
+                # TODO: assign win
+                # self.GameState.winner =
+            self.GameState += 1
+            self.GameState.pot_good = False
+            self.log(f"Advanced to new state: {self.GameState.hand_state}")
+            self.pubGame.publish(self.GameState)
+        return response
+
+    def newHand():
+        """
+        Resets self.GameState to be in state 0 (waiting)
+        """
+        # reset pot
+        self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
+        # reset table cards
+        self.GameState.table_cards = []
+        #TODO: advance blinds to next non empty seat
+
+        # publish updated GameState
+        self.pubGame.publish(self.GameState)
+        
 
     def playerTurn(self, request, response):
         """

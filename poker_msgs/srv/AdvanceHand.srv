@@ -1,0 +1,6 @@
+# 'waiting', 'preflop', 'flop', 'turn', 'river', 'finished'
+# 0, 1, 2, 3, 4, 5 (len of table_cards list)
+int newstate
+bool  folded
+string[] table_cards
+---
