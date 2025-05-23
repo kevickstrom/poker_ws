@@ -53,7 +53,7 @@ class PokerGame(Node):
         newGame.table_cards = []
 
         newGame.dealer_index = 0
-        newGame.hand_state = 'waiting'
+        newGame.hand_state = 0
         newGame.big_blind = 0.20
 
         self.GameState = newGame
@@ -106,6 +106,7 @@ class PokerGame(Node):
         """
         # start a new hand waiting -> preflop
         if self.GameState.hand_state == 0:
+            self.log("Starting hand...")
             self.GameState.hand_state +=1
             # add all the players to the hand
             for player in self.GameState.active_players:
@@ -116,7 +117,8 @@ class PokerGame(Node):
             # self.GameState.winner =
             self.newHand()
         # advance to the next stage
-        elif self.GameState.pot_good:
+        elif self.GameState.pot_good or request.force_advance:
+            self.log("advancing...")
             self.GameState.table_cards = request.table_cards
             # check if finished -> reset for new hand
             if self.GameState.hand_state == 5:
@@ -124,18 +126,20 @@ class PokerGame(Node):
                 return response
             # check if river -> finished
             elif self.GameState.hand_state == 4:
+                pass
                 # TODO: assign win
                 # self.GameState.winner =
-            self.GameState += 1
+            self.GameState.hand_state += 1
             self.GameState.pot_good = False
             self.log(f"Advanced to new state: {self.GameState.hand_state}")
             self.pubGame.publish(self.GameState)
         return response
 
-    def newHand():
+    def newHand(self):
         """
         Resets self.GameState to be in state 0 (waiting)
         """
+        self.log("Resetting for next hand...")
         # reset pot
         self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
         # reset table cards

@@ -15,4 +15,4 @@ int32 hands_played
 
 # 'waiting', 'preflop', 'flop', 'turn', 'river', 'finished'
 # 0, 1, 2, 3, 4, 5
-int hand_state
+int32 hand_state

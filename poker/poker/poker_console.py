@@ -19,6 +19,7 @@ import curses
 
 from poker_msgs.msg import GameLog, GameState, Player
 from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
+from poker_msgs.srv import AdvanceHand
 
 class PokerConsole(Node):
     def __init__(self):
@@ -33,6 +34,7 @@ class PokerConsole(Node):
         self.newGame_client = self.create_client(NewGame, 'new_game')
         self.addPlayer_client = self.create_client(AddPlayer, 'add_player')
         self.newTurn_client = self.create_client(PlayerTurn, 'player_turn')
+        self.advanceHand_client = self.create_client(AdvanceHand, 'advance_hand')
 
         # self.arduinoClient = self.create_client(SerialConnect, 'serial_connect')
 
@@ -74,6 +76,8 @@ class PokerConsole(Node):
                     self.get_logger().info("Starting game...")
                 
                 elif key == 10: # enter key
+                    # self.advanceHand_request()
+                    # TODO: This will trigger the camera to then call the advance hand request
                     self.log("enter key")
 
                 elif key == ord('c'):
@@ -117,7 +121,8 @@ class PokerConsole(Node):
         stdscr.addstr(height-3, 0, "-"*(width-1))
         key_str = "Keybinds: "
         q_str = "[Q] QUIT "
-        c_str = "[C] Connect"
+        c_str = "[C] Connect "
+        enter_str = "[Enter] Advance "
         i_str = "[I] Input Mode "
 
         stdscr.addstr(height-2, 0, key_str)
@@ -133,7 +138,7 @@ class PokerConsole(Node):
         else:
             stdscr.addstr(height-2,len(key_str)+len(q_str)+len(c_str), i_str, curses.color_pair(1))
 
-        # stdscr.addstr(height-2,len(key_str)+len(q_str)+len(c_str)+len(i_str), enter_str)
+        stdscr.addstr(height-2,len(key_str)+len(q_str)+len(c_str)+len(i_str), enter_str)
         
 
     def drawInputMode(self, stdscr, height, width, usable_height, mode="cmd"):
@@ -254,6 +259,27 @@ class PokerConsole(Node):
                 self.log("Invalid types")
                 return
 
+        elif cmd == "next":
+            # advance hand
+            if len(args) < 2:
+                self.log("USAGE: next <end_by_fold> <force_advance> <table cards>")
+                return
+            # if hand ended by everyone folding
+            if args[0].lower() == 't' or args[0].lower() == 'true':
+                folded = True
+            else:
+                folded = False
+            # force hand advancing
+            if args[1].lower() == 't' or args[1].lower() == 'true':
+                force_advance = True
+            else:
+                force_advance = False
+            cards = []
+            for i in range(2, len(args)):
+                cards.append(args[i])
+
+            self.advanceHand_request(folded, force_advance, cards)
+
 
         else:
             self.log("[USER INPUT] theres not anything implemented here yet")
@@ -304,6 +330,19 @@ class PokerConsole(Node):
 
         self.addPlayer_response = self.addPlayer_client.call_async(addPlayer)
         self.log(f"Requested to add player {newPlayer.name}")
+
+    def advanceHand_request(self, folded: bool, force_advance, table_cards):
+        """
+        Service request to advance the hand. If force_advance, will ignore current state of betting.
+        """
+        adv = AdvanceHand.Request()
+        adv.folded = folded
+        adv.table_cards = table_cards
+        adv.force_advance = force_advance
+
+        self.advanceHand_response = self.advanceHand_client.call_async(adv)
+        self.log("Requesting to advance the hand")
+
 
 
 
