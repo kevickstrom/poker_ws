@@ -107,7 +107,6 @@ class PokerGame(Node):
         # start a new hand waiting -> preflop
         if self.GameState.hand_state == 0:
             self.log("Starting hand...")
-            self.GameState.hand_state +=1
             # add all the players to the hand
             for player in self.GameState.active_players:
                 player.in_hand = True
@@ -154,6 +153,10 @@ class PokerGame(Node):
             else:
                 self.GameState.num_in_hand += 1
                 p.in_hand = True
+
+        self.GameState.hand_state = 0
+
+
         #TODO: advance blinds to next non empty seat
 
         # publish updated GameState

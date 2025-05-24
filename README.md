@@ -27,8 +27,9 @@ Current progress:
       The console shows the game log, and interacts with the game via hotkeys and Input Mode.  
 
       Input Mode Commands:  
-      - newgame: this starts an entirley new table with no players.  
+      - newgame: this starts an entireley new table with no players.  
       - add <player_name> <buy_in> <seat_pos> (optional)<afk>: this adds a new player to the table.  
+      - turn <seat_pos> <action> <amount>: fold, call, bet
       - next <end_by_fold> <force_advance> <table cards>: advance the hand. Provide visible table cards, if any.  
                                                             waiting->preflop->flop->turn->river->finished  
 
@@ -43,5 +44,5 @@ Current progress:
    - ### poker_table  
    `ros2 run poker visualize_table`  
 
-      This is the gui which shows the current state of the table. Indicated who is in the current hand, the flop, turn, river, and betting info. This node only subscribes to the game state and does not interact with the system besides visualizing.
-      Current state: Window created, assets 70% completed. Will be implemented when game is playable via console.
+      This is the gui which shows the current state of the table. Indicated who is in the current hand, the flop, turn, river, and betting info. This node only subscribes to the game state and does not interact with the system besides visualizing.  
+      Current state: Window created, assets 70% completed. Will be implemented when game is playable via console.  
