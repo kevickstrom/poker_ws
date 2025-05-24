@@ -4,6 +4,9 @@ Player[] afk_players
 
 string[] table_cards
 float32 pot
+float32 curr_bet
+int32 num_in_hand
+int32 num_actions
 # indicate when betting is done
 bool pot_good
 string winner

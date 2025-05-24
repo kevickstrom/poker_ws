@@ -29,6 +29,8 @@ Current progress:
       Input Mode Commands:  
       - newgame: this starts an entirley new table with no players.  
       - add <player_name> <buy_in> <seat_pos> (optional)<afk>: this adds a new player to the table.  
+      - next <end_by_fold> <force_advance> <table cards>: advance the hand. Provide visible table cards, if any.  
+                                                            waiting->preflop->flop->turn->river->finished  
 
    - ### poker_game  
    `ros2 run poker poker_game`  

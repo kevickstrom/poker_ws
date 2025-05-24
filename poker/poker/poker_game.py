@@ -133,6 +133,8 @@ class PokerGame(Node):
             self.GameState.pot_good = False
             self.log(f"Advanced to new state: {self.GameState.hand_state}")
             self.pubGame.publish(self.GameState)
+
+        self.log(f"Table Cards: {self.GameState.table_cards}")
         return response
 
     def newHand(self):
@@ -144,6 +146,14 @@ class PokerGame(Node):
         self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
         # reset table cards
         self.GameState.table_cards = []
+        self.GameState.num_actions = 0
+        self.GameState.num_in_hand = 0
+        for p in self.GameState.active_players:
+            if p.name == "Empty":
+                p.in_hand = False
+            else:
+                self.GameState.num_in_hand += 1
+                p.in_hand = True
         #TODO: advance blinds to next non empty seat
 
         # publish updated GameState
@@ -152,50 +162,66 @@ class PokerGame(Node):
 
     def playerTurn(self, request, response):
         """
-        Service call for player to mark a new location
-        Respondes true / false for valid move or not
-        publishes updated GameState msg
+        Service call for player to either bet, call, check.
         """
-        # TODO: Rewrite for poker actions bet, call, fold
-        '''
-        # check for correct id
-        if request.player_id != self.GameState.turn:
-            self.log("Wrong player!")
-            response.valid = False
-            return response
+        action = request.action
 
-        if request.location >= 9:
-            self.log("Invalid location!")
-            response.valid = False
-            return response
+        curr_player = self.GameState.active_players[self.GameState.action_on]
+        # TODO: check for conditions when stack hits 0
+        if action == 'fold':
+            curr_player.in_hand = False
+            self.GameState.in_hand -= 1
+            # this is the last player to fold (hand over)
+            if self.GameState.in_hand == 1:
+                self.GameState.pot_good = True
+        elif action == 'call':
+            # if i've already bet, find the difference
+            if curr_player.bet_this_hand > 0:
+                need_to_pay = self.GameState.curr_bet - curr_player.bet_this_hand
+            else:
+                need_to_pay = self.GameState.curr_bet
+            # pay the needed amt
+            curr_player.bet_this_hand = self.GameState.curr_bet
+            curr_player.stack -= need_to_pay
+            self.GameState.pot += need_to_pay
 
-        # check for valid move
-        if self.GameState.board[request.location] != -1:
-            # space is not blank
-            self.log("Space already occupied!")
-            response.valid = False
-            return response
+        elif action == 'bet':
+            # set the new amount
+            self.GameState.curr_bet = request.amount
+            # now pay, just like a call
+            if curr_player.bet_this_hand > 0:
+                need_to_pay = self.GameState.curr_bet - curr_player.bet_this_hand
+            else:
+                need_to_pay = self.GameState.curr_bet
+            # pay the needed amt
+            curr_player.bet_this_hand = self.GameState.curr_bet
+            curr_player.stack -= need_to_pay
+            self.GameState.pot += need_to_pay
 
-        self.GameState.board[request.location] = self.GameState.turn
-        self.GameState.num_turns += 1
-        self.log(f"Placed on {request.location}.")
-        # TODO: Check for win condition here?
+        self.GameState.num_actions += 1
 
-        # advance turn
-        if self.GameState.turn == 0:
-            self.GameState.turn = 1
-            # TODO: Trigger animation / speech here?
-            self.log("Your turn!")
-        else:
-            # TODO: Also animation here
-            self.GameState.turn = 0
-            self.log("My turn!")
+        # advance the action
+        self.GameState.action_on += 1
+        if self.GameState.action_on > self.GameState.seats - 1:
+            self.GameState.action_on = 0
 
-        # publish updated game state
+        # go to next player that hasn't folded
+        found_next = self.GameState.active_players[self.GameState.action_on].in_hand
+        while not found_next:
+            self.GameState.action_on += 1
+            found_next = self.GameState.active_players[self.GameState.action_on].in_hand
+
+        # Check to see if bets are all good
+        # not the best way method but it works
+        all_paid = True
+        for p in self.GameState.active_players:
+            if (p.in_hand) and (p.bet_this_hand != self.GameState.curr_bet):
+                all_paid = False
+        self.GameState.pot_good = all_paid
+
+        # TODO: Assign winner here?
+
         self.pubGame.publish(self.GameState)
-
-        response.valid = True
-        '''
 
         return response
 
