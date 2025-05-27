@@ -18,6 +18,7 @@ from rclpy.time import Time
 import curses
 
 from rclpy.parameter import Parameter
+from rcl_interfaces.srv import SetParameters
 
 from poker_msgs.msg import GameLog, GameState, Player
 from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
@@ -37,6 +38,7 @@ class PokerConsole(Node):
         self.addPlayer_client = self.create_client(AddPlayer, 'add_player')
         self.newTurn_client = self.create_client(PlayerTurn, 'player_turn')
         self.advanceHand_client = self.create_client(AdvanceHand, 'advance_hand')
+        self.paramClient = self.create_client(SetParameters, '/poker_game/set_parameters')
 
         # self.arduinoClient = self.create_client(SerialConnect, 'serial_connect')
 
@@ -266,22 +268,37 @@ class PokerConsole(Node):
                 return
             else:
                 # change flop param
-                flopParam = Parameter("flop", Parameter.TYPE.STRING_ARRAY, args)
-                self.set_parameters(flopParam)
+                if not self.paramClient.wait_for_service(timeout_sec=1):
+                    self.log("Game node not active.")
+                    return
+                req = SetParameters.Request()
+                req.parameters = [Parameter("flop", Parameter.Type.STRING_ARRAY, args).to_parameter_msg()]
+                future = self.paramClient.call_async(req)
+                rclpy.spin_until_future_complete(self, future)
                 self.log(f"Changed flop to {args}")
         elif cmd == "turn":
             if len(args) != 1:
                 self.log("USAGE: turn <card>")
             else:
-                turnParam = Parameter("turn", Parameter.TYPE.STRING, args[0])
-                self.set_parameters(turnParam)
+                if not self.paramClient.wait_for_service(timeout_sec=1):
+                    self.log("Game node not active.")
+                    return
+                req = SetParameters.Request()
+                req.parameters = [Parameter("turn", Parameter.Type.STRING, args[0]).to_parameter_msg()]
+                future = self.paramClient.call_async(req)
+                rclpy.spin_until_future_complete(self, future)
                 self.log(f"Changed turn to {args[0]}")
         elif cmd == "river":
             if len(args) != 1:
                 self.log("USAGE: river <card>")
             else:
-                turnParam = Parameter("river", Parameter.TYPE.STRING, args[0])
-                self.set_parameters(turnParam)
+                if not self.paramClient.wait_for_service(timeout_sec=1):
+                    self.log("Game node not active.")
+                    return
+                req = SetParameters.Request()
+                req.parameters = [Parameter("river", Parameter.Type.STRING, args[0]).to_parameter_msg()]
+                future = self.paramClient.call_async(req)
+                rclpy.spin_until_future_complete(self, future)
                 self.log(f"Changed river to {args[0]}")
 
         # advance the hand_state

@@ -16,6 +16,8 @@ import curses
 from rclpy.parameter import parameter_value_to_python, Parameter
 from rclpy.parameter_event_handler import ParameterEventHandler
 
+from rcl_interfaces.msg import SetParametersResult
+
 from poker_msgs.msg import GameLog, GameState, Player
 from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
 from poker_msgs.srv import AdvanceHand
@@ -57,22 +59,20 @@ class PokerGame(Node):
         """
         for p in params:
             # build table cards
-            table_cards = []
+            table_cards = self.GameState.table_cards.copy()
             if p.name == "flop" and p.type_ == Parameter.Type.STRING_ARRAY:
-                if p.value[0] != "none":
-                    for card in p.value:
-                        table_cards.append(card)
-            elif p.name == "turn" and p.type == Parameter.Type.STRING:
-                if p.value != "none":
-                    table_cards.append(card)
-            elif p.name == "river" and p.type == Parameter.Type.STRING:
-                if p.value != "none":
-                    table_cards.append(card)
+                for i, card in enumerate(p.value):
+                    table_cards[i] = card
+            elif p.name == "turn" and p.type_ == Parameter.Type.STRING:
+                table_cards[3] = p.value
+            elif p.name == "river" and p.type_ == Parameter.Type.STRING:
+                table_cards[4] = p.value
 
 
         # publish updated game
         self.GameState.table_cards = table_cards
-        self.pubGame(self.GameState)
+        self.pubGame.publish(self.GameState)
+        return SetParametersResult(successful=True, reason='')
 
 
         
@@ -98,7 +98,7 @@ class PokerGame(Node):
             player_list.append(nullPlayer)
         newGame.active_players = player_list
         newGame.afk_players = []
-        newGame.table_cards = []
+        newGame.table_cards = ["none", "none", "none", "none", "none"]
 
         newGame.dealer_index = 0
         newGame.hand_state = 0
@@ -153,9 +153,10 @@ class PokerGame(Node):
         Give new hand state and the table cards for that state
         """
         # start a new hand waiting -> preflop
+        self.log(f"Pre advance state: {self.GameState.hand_state}")
         if self.GameState.hand_state == 0:
             self.log("Starting hand...")
-            self.GameState.hand_state += 1
+            self.GameState.hand_state = self.GameState.hand_state + 1
             # add all the players to the hand
             for player in self.GameState.active_players:
                 player.in_hand = True
@@ -179,12 +180,12 @@ class PokerGame(Node):
                 pass
                 # TODO: assign win
                 # self.GameState.winner =
-            self.GameState.hand_state += 1
+            self.GameState.hand_state = self.GameState.hand_state + 1
             self.GameState.pot_good = False
             self.log(f"Advanced to new state: {self.GameState.hand_state}")
-            self.pubGame.publish(self.GameState)
-
+        self.log(f"Post advance state: {self.GameState.hand_state}")
         self.log(f"Table Cards: {self.GameState.table_cards}")
+        self.pubGame.publish(self.GameState)
         return response
 
     def newHand(self):
@@ -211,11 +212,12 @@ class PokerGame(Node):
 
         # reset table cards (This will publish the new gamestate)
         new_cards = [
-            Parameter("flop", Parameter.TYPE.STRING_ARRAY, ["none", "none", "none"]),
-            Parameter("turn", Parameter.TYPE.STRING, "none"),
-            Parameter("river", Parameter.TYPE.STRING, "none")
+            Parameter("flop", Parameter.Type.STRING_ARRAY, ["none", "none", "none"]),
+            Parameter("turn", Parameter.Type.STRING, "none"),
+            Parameter("river", Parameter.Type.STRING, "none")
         ]
-        results = self.set_parameters(new_cards)
+        self.set_parameters(new_cards)
+
         
 
     def playerTurn(self, request, response):

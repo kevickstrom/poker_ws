@@ -131,6 +131,8 @@ class visualizeTableGUI(Node):
             # draw table cards
             if self.GameState.hand_state > 1:
                 for i, card_str in enumerate(self.GameState.table_cards):
+                    if card_str == "none":
+                        continue
                     card_img = self.card_map[card_str]
                     self.screen.blit(card_img, deck.get_rect(center=(deck_x+i*CARD_W/2+CARD_W, deck_y)))
 
