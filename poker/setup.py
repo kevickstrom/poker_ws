@@ -27,7 +27,8 @@ setup(
         'console_scripts': [
             'poker_console = poker.poker_console:createConsole',
             'visualizeTable = poker.visualizeTableGUI:main',
-            'poker_game = poker.poker_game:createGame'
+            'poker_game = poker.poker_game:createGame',
+            'poker_camera = poker.poker_camera:main'
         ],
     },
 )

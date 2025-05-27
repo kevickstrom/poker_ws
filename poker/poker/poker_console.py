@@ -224,8 +224,6 @@ class PokerConsole(Node):
 
         # enter player action
         elif cmd == "turn":
-            self.log("turn is not implemented")
-            return
             if len(args) != 2:
                 self.log("USAGE: turn <seat_pos> <action> <amount>")
                 return
@@ -235,7 +233,7 @@ class PokerConsole(Node):
             except ValueError:
                 self.log("seat_pos must be int")
                 return
-            self.newTurn_request(player_id, loc)
+            #self.newTurn_request(player_id, loc)
 
         # request new game
         elif cmd == "newgame":

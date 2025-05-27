@@ -13,6 +13,9 @@ from rclpy.action import ActionClient
 from rclpy.time import Time
 import curses
 
+from rclpy.parameter import parameter_value_to_python
+from rclpy.parameter_event_handler import ParameterEventHandler
+
 from poker_msgs.msg import GameLog, GameState, Player
 from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
 from poker_msgs.srv import AdvanceHand
@@ -22,6 +25,8 @@ class PokerGame(Node):
         super().__init__('poker_game')
         self.logging = True
         self.GameState = None
+        #self.declare_parameter("seats", 2)
+        #self.seats = 
         self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
         self.pubGame = self.create_publisher(GameState, 'game_state', 10)
         self.newGame_srv = self.create_service(NewGame, 'new_game', self.newGame)
@@ -107,6 +112,7 @@ class PokerGame(Node):
         # start a new hand waiting -> preflop
         if self.GameState.hand_state == 0:
             self.log("Starting hand...")
+            self.GameState.hand_state += 1
             # add all the players to the hand
             for player in self.GameState.active_players:
                 player.in_hand = True

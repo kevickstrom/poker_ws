@@ -9,7 +9,10 @@ A visualizer window displays the state of the table--visible cards, players in t
 The last window is a collection of the other necessary nodes to run / automate.  
 
 Current progress:
-   Game will be played via console UI (cmd like inputs)
+   Game will be played via console UI (cmd like inputs)  
+   Working on configuring GoPro to recognize playing cards to update the visualizer with  
+   Right now most everything is a service. I don't like this and intend to parameterize the nodes / change the interface to  
+         use more ROS features but I need to get it working first.  
 
    Next step:
    Arduino player action puck (3 button inputs)
