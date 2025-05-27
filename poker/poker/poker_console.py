@@ -17,6 +17,8 @@ from rclpy.action import ActionClient
 from rclpy.time import Time
 import curses
 
+from rclpy.parameter import Parameter
+
 from poker_msgs.msg import GameLog, GameState, Player
 from poker_msgs.srv import NewGame, PlayerTurn, AddPlayer
 from poker_msgs.srv import AdvanceHand
@@ -223,9 +225,9 @@ class PokerConsole(Node):
             self.log('connect is not implemented')
 
         # enter player action
-        elif cmd == "turn":
+        elif cmd == "action":
             if len(args) != 2:
-                self.log("USAGE: turn <seat_pos> <action> <amount>")
+                self.log("USAGE: action <seat_pos> <action> <amount>")
                 return
             try:
                 seat_pos = int(args[0])
@@ -257,10 +259,35 @@ class PokerConsole(Node):
                 self.log("Invalid types")
                 return
 
+        # table card param changes
+        elif cmd == "flop":
+            if len(args) < 3:
+                self.log("USAGE: flop <card1> <card2> <card3>")
+                return
+            else:
+                # change flop param
+                flopParam = Parameter("flop", Parameter.TYPE.STRING_ARRAY, args)
+                self.set_parameters(flopParam)
+                self.log(f"Changed flop to {args}")
+        elif cmd == "turn":
+            if len(args) != 1:
+                self.log("USAGE: turn <card>")
+            else:
+                turnParam = Parameter("turn", Parameter.TYPE.STRING, args[0])
+                self.set_parameters(turnParam)
+                self.log(f"Changed turn to {args[0]}")
+        elif cmd == "river":
+            if len(args) != 1:
+                self.log("USAGE: river <card>")
+            else:
+                turnParam = Parameter("river", Parameter.TYPE.STRING, args[0])
+                self.set_parameters(turnParam)
+                self.log(f"Changed river to {args[0]}")
+
+        # advance the hand_state
         elif cmd == "next":
-            # advance hand
             if len(args) < 2:
-                self.log("USAGE: next <end_by_fold> <force_advance> <table cards>")
+                self.log("USAGE: next <end_by_fold> <force_advance>")
                 return
             # if hand ended by everyone folding
             if args[0].lower() == 't' or args[0].lower() == 'true':
@@ -273,10 +300,8 @@ class PokerConsole(Node):
             else:
                 force_advance = False
             cards = []
-            for i in range(2, len(args)):
-                cards.append(args[i])
 
-            self.advanceHand_request(folded, force_advance, cards)
+            self.advanceHand_request(folded, force_advance)
 
 
         else:
@@ -329,13 +354,12 @@ class PokerConsole(Node):
         self.addPlayer_response = self.addPlayer_client.call_async(addPlayer)
         self.log(f"Requested to add player {newPlayer.name}")
 
-    def advanceHand_request(self, folded: bool, force_advance, table_cards):
+    def advanceHand_request(self, folded: bool, force_advance):
         """
         Service request to advance the hand. If force_advance, will ignore current state of betting.
         """
         adv = AdvanceHand.Request()
         adv.folded = folded
-        adv.table_cards = table_cards
         adv.force_advance = force_advance
 
         self.advanceHand_response = self.advanceHand_client.call_async(adv)

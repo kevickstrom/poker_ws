@@ -13,7 +13,7 @@ from rclpy.action import ActionClient
 from rclpy.time import Time
 import curses
 
-from rclpy.parameter import parameter_value_to_python
+from rclpy.parameter import parameter_value_to_python, Parameter
 from rclpy.parameter_event_handler import ParameterEventHandler
 
 from poker_msgs.msg import GameLog, GameState, Player
@@ -27,12 +27,55 @@ class PokerGame(Node):
         self.GameState = None
         #self.declare_parameter("seats", 2)
         #self.seats = 
+        self.setup_params()
+        # declare params -- GameState built from these
+        self.add_on_set_parameters_callback(self.on_param_change)
         self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
         self.pubGame = self.create_publisher(GameState, 'game_state', 10)
         self.newGame_srv = self.create_service(NewGame, 'new_game', self.newGame)
         self.addPlayer_srv = self.create_service(AddPlayer, 'add_player', self.addPlayer)
         self.playerTurn_srv = self.create_service(PlayerTurn, 'player_turn', self.playerTurn)
         self.advanceHand_srv = self.create_service(AdvanceHand, 'advance_hand', self.advanceHand)
+
+    def setup_params(self):
+        """
+        Set up game parameters that the GameState will build from
+        """
+        param_list = [
+            ("seats", 10),
+            ("flop", ["none", "none", "none"]),
+            ("turn", "none"),
+            ("river", "none")
+        ]
+
+        for name, default in param_list:
+            self.declare_parameter(name, default)
+
+    def on_param_change(self, params):
+        """
+        Update params and republish new GameState
+        """
+        for p in params:
+            # build table cards
+            table_cards = []
+            if p.name == "flop" and p.type_ == Parameter.Type.STRING_ARRAY:
+                if p.value[0] != "none":
+                    for card in p.value:
+                        table_cards.append(card)
+            elif p.name == "turn" and p.type == Parameter.Type.STRING:
+                if p.value != "none":
+                    table_cards.append(card)
+            elif p.name == "river" and p.type == Parameter.Type.STRING:
+                if p.value != "none":
+                    table_cards.append(card)
+
+
+        # publish updated game
+        self.GameState.table_cards = table_cards
+        self.pubGame(self.GameState)
+
+
+        
 
     def newGame(self, request, response):
         """
@@ -124,7 +167,9 @@ class PokerGame(Node):
         # advance to the next stage
         elif self.GameState.pot_good or request.force_advance:
             self.log("advancing...")
-            self.GameState.table_cards = request.table_cards
+            # TODO: If camera connected:
+            # TODO: Get cards from camera -> this will trigger the param change and auto update the GameState table_cards
+            #self.GameState.table_cards = request.table_cards
             # check if finished -> reset for new hand
             if self.GameState.hand_state == 5:
                 self.newHand()
@@ -150,7 +195,7 @@ class PokerGame(Node):
         # reset pot
         self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
         # reset table cards
-        self.GameState.table_cards = []
+        #self.GameState.table_cards = []
         self.GameState.num_actions = 0
         self.GameState.num_in_hand = 0
         for p in self.GameState.active_players:
@@ -162,11 +207,15 @@ class PokerGame(Node):
 
         self.GameState.hand_state = 0
 
-
         #TODO: advance blinds to next non empty seat
 
-        # publish updated GameState
-        self.pubGame.publish(self.GameState)
+        # reset table cards (This will publish the new gamestate)
+        new_cards = [
+            Parameter("flop", Parameter.TYPE.STRING_ARRAY, ["none", "none", "none"]),
+            Parameter("turn", Parameter.TYPE.STRING, "none"),
+            Parameter("river", Parameter.TYPE.STRING, "none")
+        ]
+        results = self.set_parameters(new_cards)
         
 
     def playerTurn(self, request, response):

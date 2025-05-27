@@ -32,9 +32,11 @@ Current progress:
       Input Mode Commands:  
       - newgame: this starts an entireley new table with no players.  
       - add <player_name> <buy_in> <seat_pos> (optional)<afk>: this adds a new player to the table.  
-      - turn <seat_pos> <action> <amount>: fold, call, bet
-      - next <end_by_fold> <force_advance> <table cards>: advance the hand. Provide visible table cards, if any.  
-                                                            waiting->preflop->flop->turn->river->finished  
+      - action <seat_pos> <action> <amount>: fold, call, bet  
+      - next <end_by_fold> <force_advance>: advance the hand.  waiting->preflop->flop->turn->river->finished and resets to waiting.  
+      - flop <card1> <card2> <card3>: this updates the flop param on the game node.  
+      - turn <card>: this updates the turn card param on the game node.  
+      - river <card>: this updates the river card param on the game node.
 
    - ### poker_game  
    `ros2 run poker poker_game`  

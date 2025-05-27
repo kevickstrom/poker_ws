@@ -118,6 +118,7 @@ class visualizeTableGUI(Node):
             if self.GameState.hand_state == 0:
                 deck = self.card_map["gray_deck"]
             elif self.GameState.hand_state == 1:
+                # preflop - blue deck
                 deck = self.card_map["blue_deck"]
             else:
                 # in hand so grab color deck
@@ -128,9 +129,10 @@ class visualizeTableGUI(Node):
             self.screen.blit(deck, deck.get_rect(center=(deck_x, deck_y)))
 
             # draw table cards
-            for i, card_str in enumerate(self.GameState.table_cards):
-                card_img = self.card_map[card_str]
-                self.screen.blit(card_img, deck.get_rect(center=(deck_x+i*CARD_W/2+CARD_W, deck_y)))
+            if self.GameState.hand_state > 1:
+                for i, card_str in enumerate(self.GameState.table_cards):
+                    card_img = self.card_map[card_str]
+                    self.screen.blit(card_img, deck.get_rect(center=(deck_x+i*CARD_W/2+CARD_W, deck_y)))
 
 
 def main():

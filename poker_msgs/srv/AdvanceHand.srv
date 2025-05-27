@@ -1,6 +1,5 @@
 # 'waiting', 'preflop', 'flop', 'turn', 'river', 'finished'
-# 0, 1, 2, 3, 4, 5 (len of table_cards list)
+# 0, 1, 2, 3, 4, 5
 bool  folded
-string[] table_cards
 bool force_advance
 ---
