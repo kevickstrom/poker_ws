@@ -11,17 +11,22 @@ A visualizer window displays the state of the table--visible cards, players in t
 The last window is a collection of the other necessary nodes to run / automate.  
 
 Current progress:
-   Game will be played via console UI (cmd like inputs)  
+   Game is mostly complete via console UI manual control (cmd like inputs to override automation steps)  
    Working on configuring GoPro to recognize playing cards to update the visualizer with  
-   Right now most everything is a service. I don't like this and intend to parameterize the nodes / change the interface to  
-         use more ROS features but I need to get it working first.  
 
-   Next step:
-   Arduino player action puck (3 button inputs)
-   Camera, picture, ocr nodes for table cards
+Next steps:  
+* Finish Manual Control:  
+   Mostly done, but small additions still needed.  
+* Camera:  
+   Filtering nodes to turn raw feed into several images, which can be used with edge detection etc to determine rank and suit  
+* Arduino player action puck:  
+   This is an arduino and a breadboard. It has a display, four buttons, and a potentiometer. Three buttons toggle which action the player wants (fold, call, bet), and the fourth is the confirmation button for the arduino to send the serial command to a control node. The potentiometer selects the size of the bet in 10 cent increments, mapped to the size of the current players stack. The lcd displays which action the player has selected /  the size of their selected bet before they press the confirmation button.  
   
 ## DEPENDENCIES  
+* ROS2 Jazzy
 * pygame  
+* curses
+* OpenCv
   
 ## NODES  
   
@@ -45,11 +50,26 @@ Current progress:
 
       This is the game manager node. It is the only one to publish the game state.  
       It updates the game state based on action, adding / moving players, etc with action / service calls.  
-        
-      - #### Services  
+
 
    - ### poker_table  
    `ros2 run poker visualize_table`  
 
       This is the gui which shows the current state of the table. Indicated who is in the current hand, the flop, turn, river, and betting info. This node only subscribes to the game state and does not interact with the system besides visualizing.  
       Current state: Window created, assets 70% completed. Will be implemented when game is playable via console.  
+   
+   - ### poker_camera  
+   `ros2 run poker poker_camera`  
+
+      This is the node which just publishes a raw feed from the webcam. Further nodes will filter and republish in order to detect what playing cards are present on the table.  
+
+      CURRENTLY IN PROGRESS  
+
+   - ### camera_viewer  
+   `ros2 run poker camera_viewer`  
+
+      This is a window that displays the camera feed. By changing a parameter, the node will display the image at different parts of the filtering pipeline to aid in debug and verify the camera is working and recognizing the correct cards.  
+
+      CURRENTLY IN PROGRESS
+
+
