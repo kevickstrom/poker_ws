@@ -100,7 +100,7 @@ class PokerGame(Node):
         newGame.afk_players = []
         newGame.table_cards = ["none", "none", "none", "none", "none"]
 
-        newGame.dealer_index = 0
+        newGame.blind_index = [0, 1, 2]
         newGame.hand_state = 0
         newGame.big_blind = 0.20
 

@@ -12,7 +12,8 @@ bool pot_good
 string winner
 float32 big_blind
 
-int32 dealer_index
+# dealer, sb, bb
+int32[3] blind_index
 int32 action_on
 int32 hands_played
 

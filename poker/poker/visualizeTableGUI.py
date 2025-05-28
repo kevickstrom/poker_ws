@@ -20,7 +20,7 @@ WINDOW_WIDTH = 1800
 WINDOW_HEIGHT = 600
 
 CARD_W, CARD_H = 150, 120
-NUM_BACKS = 9
+NUM_BACKS = 11
 NUM_FACE_CARDS = 3 * 4 # K Q J
 NUM_LOW_CARDS = 10 * 4 # A - 10
 TOTAL_CARDS = NUM_BACKS+NUM_FACE_CARDS+NUM_LOW_CARDS
@@ -46,6 +46,15 @@ class visualizeTableGUI(Node):
         pkg_path = get_package_share_directory('poker')
         card_path = os.path.join(pkg_path, 'assets/', "cards-Sheet.png")
         table_path = os.path.join(pkg_path, 'assets/', "table_bg.png")
+        indicators_path = os.path.join(pkg_path, 'assets/', "indicators-Sheet.png")
+
+        indicatorSheet = pygame.image.load(indicators_path).convert_alpha()
+        self.indicators = []
+        for i in range(3):
+            rect = pygame.Rect(i * 65, 0, 65, 65)
+            # dealer, sb, bb
+            self.indicators.append(indicatorSheet.subsurface(rect).copy())
+
         sheet = pygame.image.load(card_path).convert_alpha()
         self.table_bg = pygame.image.load(table_path)
         self.cards = []
@@ -61,7 +70,9 @@ class visualizeTableGUI(Node):
                         "gray_deck":self.cards[5],
                         "red_two":self.cards[6],
                         "blue_two":self.cards[7],
-                        "gray_two":self.cards[8]}
+                        "gray_two":self.cards[8],
+                        "red_action":self.cards[9],
+                        "blue_action":self.cards[9],}
 
         # face cards
         faces = [('k',4),('q',4),('j',4)]
@@ -112,6 +123,20 @@ class visualizeTableGUI(Node):
 
         ]
 
+        # x y coords to draw dealer, big blind, small blind
+        self.blind_locations = [
+                (900, 180),     # seat 0 top center
+                (1200, 180),    # seat 1 top right
+                (1380, 200),    # seat 2 right upper
+                (1380, 375),    # seat 3 right lower
+                (1200, 410),    # seat 4 bottom right
+                (900, 410),     # seat 5 bottom center
+                (500, 410),     # seat 6 bottom left
+                (420, 375),     # seat 7 left lower
+                (420, 200),     # seat 8 left upper
+                (500, 180),     # seat 9 top left
+        ]
+
 
     def gameState_cb(self, gameState):
         self.GameState = gameState
@@ -142,6 +167,16 @@ class visualizeTableGUI(Node):
         Draw the player cards, stack size on the table
         """
         if self.GameState is not None:
+            # draw blinds chips
+            dealer_chip = self.indicators[0]
+            sb_chip = self.indicators[1]
+            bb_chip = self.indicators[2]
+            self.screen.blit(dealer_chip, dealer_chip.get_rect(center=self.blind_locations[self.GameState.blind_index[0]]))
+            self.screen.blit(sb_chip, sb_chip.get_rect(center=self.blind_locations[self.GameState.blind_index[1]]))
+            self.screen.blit(bb_chip, bb_chip.get_rect(center=self.blind_locations[self.GameState.blind_index[2]]))
+
+
+            
             # draw players
             for i, p in enumerate(self.GameState.active_players):
                 if p.name != "Empty":
@@ -170,13 +205,20 @@ class visualizeTableGUI(Node):
                     if p.in_hand:
                         if self.GameState.hand_state == 1 or self.GameState.hand_state == 5:
                             # preflop and finished
-                            hand = self.card_map["blue_two"]
+                            if self.GameState.action_on == i:
+                                hand = self.card_map["blue_action"]
+                            else:
+                                hand = self.card_map["blue_two"]
                         elif self.GameState.hand_state == 0:
                             # waiting state
                             hand = self.card_map["gray_two"]
                         else:
                             # hand in play
-                            hand = self.card_map["red_two"]
+                            if self.GameState.action_on == i:
+                                hand = self.card_map["red_action"]
+                            else:
+                                hand = self.card_map["red_two"]
+                            
                     else:
                         # draw gray cards
                         hand = self.card_map["gray_two"]
