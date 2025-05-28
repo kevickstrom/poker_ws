@@ -59,6 +59,20 @@ class visualizeTableGUI(Node):
                         "blue_two":self.cards[7],
                         "gray_two":self.cards[8]}
 
+        # x y coords to draw players at
+        self.player_locations = [
+                (900, 80),     # seat 0 top center
+                (1200, 80),    # seat 1 top right
+                (1480, 200),    # seat 2 right upper
+                (1480, 375),    # seat 3 right lower
+                (1200, 510),    # seat 4 bottom right
+                (900, 510),     # seat 5 bottom center
+                (500, 510),     # seat 6 bottom left
+                (320, 375),     # seat 7 left lower
+                (320, 200),     # seat 8 left upper
+                (500, 80),     # seat 9 top left
+        ]
+
         # face cards
         faces = [('k',4),('q',4),('j',4)]
         suits = ['s','c','d','h']
@@ -106,7 +120,20 @@ class visualizeTableGUI(Node):
         """
         Draw the player cards, stack size on the table
         """
-        pass
+        if self.GameState is not None:
+            # draw players
+            for i, p in enumerate(self.GameState.active_players):
+                if p.name != "Empty":
+                    if p.in_hand:
+                        # draw colored cards
+                        if self.GameState.hand_state == 1:
+                            hand = self.card_map["blue_two"]
+                        else:
+                            hand = self.card_map["red_two"]
+                    else:
+                        # draw gray cards
+                        hand = self.card_map["gray_two"]
+                    self.screen.blit(hand, hand.get_rect(center=self.player_locations[i]))
 
     def drawCards(self):
         """
