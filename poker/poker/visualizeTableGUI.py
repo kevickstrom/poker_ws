@@ -25,6 +25,7 @@ NUM_FACE_CARDS = 3 * 4 # K Q J
 NUM_LOW_CARDS = 10 * 4 # A - 10
 TOTAL_CARDS = NUM_BACKS+NUM_FACE_CARDS+NUM_LOW_CARDS
 
+
 class visualizeTableGUI(Node):
     def __init__(self):
         super().__init__('table_visualizer')
@@ -32,6 +33,9 @@ class visualizeTableGUI(Node):
         self.GameState = None
 
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        self.player_font = pygame.font.SysFont("Verdana", 18, bold=True)
+        self.name_color = (245, 245, 245) # grayish white
+        self.stack_color = (255, 215, 0) # gold tone
         self.init_images()
         pygame.display.set_caption("Table Visualizer")
 
@@ -59,20 +63,6 @@ class visualizeTableGUI(Node):
                         "blue_two":self.cards[7],
                         "gray_two":self.cards[8]}
 
-        # x y coords to draw players at
-        self.player_locations = [
-                (900, 80),     # seat 0 top center
-                (1200, 80),    # seat 1 top right
-                (1480, 200),    # seat 2 right upper
-                (1480, 375),    # seat 3 right lower
-                (1200, 510),    # seat 4 bottom right
-                (900, 510),     # seat 5 bottom center
-                (500, 510),     # seat 6 bottom left
-                (320, 375),     # seat 7 left lower
-                (320, 200),     # seat 8 left upper
-                (500, 80),     # seat 9 top left
-        ]
-
         # face cards
         faces = [('k',4),('q',4),('j',4)]
         suits = ['s','c','d','h']
@@ -90,6 +80,37 @@ class visualizeTableGUI(Node):
                 card = f"{val}{suit}"
                 idx = start + vi*4 + si
                 self.card_map[card] = self.cards[idx]
+
+        
+        # x y coords to draw players at
+        # center the cards here
+        self.player_locations = [
+                (900, 80),     # seat 0 top center
+                (1200, 80),    # seat 1 top right
+                (1480, 200),    # seat 2 right upper
+                (1480, 375),    # seat 3 right lower
+                (1200, 510),    # seat 4 bottom right
+                (900, 510),     # seat 5 bottom center
+                (500, 510),     # seat 6 bottom left
+                (320, 375),     # seat 7 left lower
+                (320, 200),     # seat 8 left upper
+                (500, 80),     # seat 9 top left
+        ]
+
+        # x y coords to draw player names
+        self.name_locations = [
+                (980, 35),     # seat 0 top center
+                (1280, 35),    # seat 1 top right   # bottom right te
+                (1560, 155),    # seat 2 right upper
+                (1560, 330),    # seat 3 right lower
+                (1280, 510),    # seat 4 bottom right
+                (980, 510),     # seat 5 bottom center
+                (580, 510),     # seat 6 bottom left
+                (250, 330),     # seat 7 left lower
+                (250, 155),     # seat 8 left upper
+                (580, 35),     # seat 9 top left
+
+        ]
 
 
     def gameState_cb(self, gameState):
@@ -124,11 +145,37 @@ class visualizeTableGUI(Node):
             # draw players
             for i, p in enumerate(self.GameState.active_players):
                 if p.name != "Empty":
+                    # draw player name, stack size and buy in
+                    name_surf = self.player_font.render(p.name, True, self.name_color)
+                    stack_surf = self.player_font.render(f"Stack: {p.stack}", True, self.stack_color)
+
+                    if i < 4 or i == 9:
+                        # grab the bottom left
+                        name_rect = name_surf.get_rect(bottomleft=self.name_locations[i])
+                        stack_rect = stack_surf.get_rect(topleft=(self.name_locations[i][0], self.name_locations[i][1]+10))
+                    elif i < 7:
+                        # grab the top left
+                        name_rect = name_surf.get_rect(topleft=self.name_locations[i])
+                        stack_rect = stack_surf.get_rect(topleft=(self.name_locations[i][0], self.name_locations[i][1]+25))
+                    else:
+                        # grab the bottom right
+                        name_rect = name_surf.get_rect(bottomright=self.name_locations[i])
+                        stack_rect = stack_surf.get_rect(bottomright=(self.name_locations[i][0], self.name_locations[i][1]+25))
+                    self.screen.blit(name_surf, name_rect)
+                    self.screen.blit(stack_surf, stack_rect)
+                    
+                    # draw player stack
+
+                    # draw cards
                     if p.in_hand:
-                        # draw colored cards
-                        if self.GameState.hand_state == 1:
+                        if self.GameState.hand_state == 1 or self.GameState.hand_state == 5:
+                            # preflop and finished
                             hand = self.card_map["blue_two"]
+                        elif self.GameState.hand_state == 0:
+                            # waiting state
+                            hand = self.card_map["gray_two"]
                         else:
+                            # hand in play
                             hand = self.card_map["red_two"]
                     else:
                         # draw gray cards
