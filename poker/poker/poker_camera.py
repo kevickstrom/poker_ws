@@ -44,7 +44,7 @@ class CameraPublisher(Node):
             history = QoSHistoryPolicy.KEEP_LAST,
             depth = 10
         )
-        self.imgPub = self.create_publisher(Image, '/raw_camera', sensor_qos)
+        self.imgPub = self.create_publisher(Image, 'raw_camera', sensor_qos)
 
         self.bridge = CvBridge()
         self.timer = self.create_timer(1.0 / self.fps, self.frame)

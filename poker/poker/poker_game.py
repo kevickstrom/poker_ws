@@ -230,10 +230,13 @@ class PokerGame(Node):
         # TODO: check for conditions when stack hits 0
         if action == 'fold':
             curr_player.in_hand = False
-            self.GameState.in_hand -= 1
+            self.GameState.num_in_hand -= 1
             # this is the last player to fold (hand over)
-            if self.GameState.in_hand == 1:
+            if self.GameState.in_hand == 0:
                 self.GameState.pot_good = True
+                # TODO: assign win
+                # put into waiting state
+                self.GameState = 5
         elif action == 'call':
             # if i've already bet, find the difference
             if curr_player.bet_this_hand > 0:
