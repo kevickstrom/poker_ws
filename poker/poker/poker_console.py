@@ -31,6 +31,7 @@ class PokerConsole(Node):
         self.inputMode = False
         self.gameLog = []
         # self.score = None
+        self.GameState = None
         self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
         self.subLog = self.create_subscription(GameLog, 'game_log', self.logsubscriber, 10)
         self.subGame = self.create_subscription(GameState, 'game_state', self.readGameState, 10)
@@ -228,12 +229,17 @@ class PokerConsole(Node):
 
         # enter player action
         elif cmd == "action":
-            if len(args) != 2:
-                self.log("USAGE: action <seat_pos> <action> <amount>")
+            if len(args) < 1:
+                self.log("USAGE: action <action> <amount>")
                 return
             try:
-                seat_pos = int(args[0])
-                player_action = args[1]
+                player_action = args[0]
+                if len(args) == 2:
+                    amount = float(args[1])
+                else:
+                    amount = 0.0
+                self.playerAction_request(player_action, amount)
+                
             except ValueError:
                 self.log("seat_pos must be int")
                 return
@@ -337,20 +343,19 @@ class PokerConsole(Node):
         self.NewGame_response = self.newGame_client.call_async(request)
         self.log("Requested new game")
 
-    def newTurn_request(self, player_id:int, location: int):
+    def playerAction_request(self, action: str, amount=0.0):
         """
-        Service request to make a turn
-        id 0 = cpu, 1 = human
+        Service request make player action fold call bet
         """
         if not self.newTurn_client.wait_for_service(timeout_sec=1):
             self.log("Game node not active")
             return
 
         newTurn = PlayerTurn.Request()
-        newTurn.player_id = player_id
-        newTurn.location = location
-        self.newTurn_response = self.newTurn_client.call_async(newTurn)
-        self.log(f"Requested turn for id {player_id}, location {location}")
+        newTurn.action = action
+        newTurn.amount = amount
+        self.playerAction_response = self.newTurn_client.call_async(newTurn)
+        self.log(f"Requested action {action}, amount {amount}")
 
     def addPlayer_request(self, name:str, buy_in:float, seat_pos:int, afk:bool = False):
         """
@@ -407,6 +412,7 @@ class PokerConsole(Node):
         """
         Subscriber callback to the GameState topic
         """
+        self.GameState = msg
         self.log("received updated GameState")
 
 def createConsole(args=None):

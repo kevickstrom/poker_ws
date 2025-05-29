@@ -12,6 +12,8 @@ from poker_msgs.msg import GameState
 
 from ament_index_python.packages import get_package_share_directory
 
+from poker_msgs.msg import GameLog
+
 
 import pygame, sys, os
 
@@ -31,6 +33,9 @@ class visualizeTableGUI(Node):
         super().__init__('table_visualizer')
         self.gameStateSub = self.create_subscription(GameState, 'game_state', self.gameState_cb, 10)
         self.GameState = None
+
+        self.logging = True
+        self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
 
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.player_font = pygame.font.SysFont("Verdana", 18, bold=True)
@@ -182,7 +187,7 @@ class visualizeTableGUI(Node):
                 if p.name != "Empty":
                     # draw player name, stack size and buy in
                     name_surf = self.player_font.render(p.name, True, self.name_color)
-                    stack_surf = self.player_font.render(f"Stack: {p.stack}", True, self.stack_color)
+                    stack_surf = self.player_font.render(f"Stack: {p.stack:.2f}", True, self.stack_color)
 
                     if i < 4 or i == 9:
                         # grab the bottom left
@@ -203,7 +208,8 @@ class visualizeTableGUI(Node):
 
                     # draw cards
                     if p.in_hand:
-                        if self.GameState.hand_state == 1 or self.GameState.hand_state == 5:
+                        #self.log(f"p: {p.name} hs: {self.GameState.hand_state}")
+                        if (self.GameState.hand_state == 1):
                             # preflop and finished
                             if self.GameState.action_on == i:
                                 hand = self.card_map["blue_action"]
@@ -251,6 +257,23 @@ class visualizeTableGUI(Node):
                         continue
                     card_img = self.card_map[card_str]
                     self.screen.blit(card_img, deck.get_rect(center=(deck_x+i*CARD_W/2+CARD_W, deck_y)))
+
+            # draw pot
+            pot_surf = self.player_font.render(f"Pot: {self.GameState.pot:.2f}", True, self.stack_color)
+            pot_rect = pot_surf.get_rect(topleft=(deck_x-(CARD_W/3), deck_y+CARD_W/2))
+            self.screen.blit(pot_surf, pot_rect)
+        
+    def log(self, msg):
+        """
+        log to topic and to curses terminal window
+        """
+        if self.logging:
+            newmsg = GameLog()
+            newmsg.stamp = self.get_clock().now().to_msg()
+            newmsg.node_name = self.get_name()
+            newmsg.content = msg
+            self.pubLog.publish(newmsg)
+        self.get_logger().info(msg)
 
 
 def main():

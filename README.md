@@ -40,7 +40,7 @@ Next steps:
       Input Mode Commands:  
       - newgame: this starts an entireley new table with no players.  
       - add <player_name> <buy_in> <seat_pos> (optional)<afk>: this adds a new player to the table.  
-      - action <seat_pos> <action> <amount>: fold, call, bet  
+      - action <action> <amount>: fold, call, bet  
       - next <end_by_fold> <force_advance>: advance the hand.  
                         waiting->preflop->flop->turn->river->finished and resets back to waiting.  
       - flop <card1> <card2> <card3>: this updates the flop param on the game node.  
