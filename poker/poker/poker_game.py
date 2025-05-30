@@ -104,6 +104,7 @@ class PokerGame(Node):
         newGame.blind_index = [0, 1, 2]
         newGame.hand_state = 0
         newGame.big_blind = 0.20
+        newGame.action_on = 0
 
         self.GameState = newGame
 
@@ -161,6 +162,7 @@ class PokerGame(Node):
             self.GameState.hand_state = self.GameState.hand_state + 1
 
             # TODO: Set action to UTG
+            self.advanceAction(new_round=True)
 
         # everyone folded so assign win
         elif request.folded:
@@ -169,45 +171,97 @@ class PokerGame(Node):
             self.newHand()
         # advance to the next stage
         elif self.GameState.pot_good or request.force_advance:
+            # pot good will be used to toggle preflop->flop->turn->river
+            # force_advance for waiting->preflop, river->finished, finished->waiting
+            # go to next round of betting, or end the hand
+
             self.log("advancing...")
             # TODO: If camera connected:
             # TODO: Get cards from camera -> this will trigger the param change and auto update the GameState table_cards
             #self.GameState.table_cards = request.table_cards
             # check if finished -> reset for new hand
             if self.GameState.hand_state == 5:
+                # hand has been finished, use requested for a new hand
+                if self.GameState.winner == "none":
+                    self.log("Assign winner before playing next hand!")
+                    return response
                 self.newHand()
                 return response
             # check if river -> finished
             elif self.GameState.hand_state == 4:
                 pass
+                # action on the river has just finished, enter finished state after selecting winner
                 # TODO: assign win
                 # self.GameState.winner =
+
             self.GameState.hand_state = self.GameState.hand_state + 1
             self.GameState.pot_good = False
             self.log(f"Advanced to new state: {self.GameState.hand_state}")
+            # set action to correct player
+            self.advanceAction(new_round=True)
         else:
             # TODO Set action to BB or next relevant player
             pass
         self.log(f"Post advance state: {self.GameState.hand_state}")
         self.log(f"Table Cards: {self.GameState.table_cards}")
+        bad = self.GameState.action_on
+        self.log(f" action_on = {bad!r} (type={type(bad)})")
         self.pubGame.publish(self.GameState)
         return response
+
+    def advanceAction(self, new_round = False):
+        """
+        Helper function to set the GameState.action_on to the correct player
+        New round of betting sets to correct player (UTG preflop, first to act left of deal post flop)
+        """
+        if new_round:
+            if self.GameState.hand_state == 1:
+                # preflop UTG
+                start_idx = (self.GameState.blind_index[2] + 1) % self.GameState.seats
+            else:
+                # post flop, first to left of dealer
+                start_idx = (self.GameState.blind_index[0] + 1) % self.GameState.seats
+                # TODO: track whole hand and per round bets?
+                self.GameState.curr_bet = 0.0
+                for p in self.GameState.active_players:
+                    if p.name != "Empty":
+                        p.bet_this_hand = 0.0
+
+        else:
+            # not a new round of betting, this executes when player fold call, bet
+            start_idx = (self.GameState.action_on + 1) % self.GameState.seats
+
+        # find next player who is still in the hand
+        idx = start_idx
+        for _ in range(self.GameState.seats):
+            p = self.GameState.active_players[idx]
+            if p.in_hand and not p.all_in:
+                self.GameState.action_on = int(idx)
+                break
+            idx = (idx + 1) % self.GameState.seats
+
+        else:
+            # should never get here
+            self.log("No player found to advance action_on")
+
+        # check to see if the pot is good
+        all_paid = True
+        for p in self.GameState.active_players:
+            if p.in_hand and p.bet_this_hand != self.GameState.curr_bet:
+                all_paid = False
+                break
+        self.GameState.pot_good = all_paid
+        if all_paid:
+            self.log("Pot is good.")
+
 
     def newHand(self):
         """
         Resets self.GameState to be in state 0 (waiting)
         """
         self.log("Resetting for next hand...")
-        # reset pot
-        self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
-        # set blinds
-        # if not started yet, first player in active players
-        # otherwise advance blinds
-        # get money from blind players
 
-        # reset table cards
-
-        #self.GameState.table_cards = []
+        self.GameState.winner = "none"
         self.GameState.num_actions = 0
         self.GameState.num_in_hand = 0
         for p in self.GameState.active_players:
@@ -216,10 +270,17 @@ class PokerGame(Node):
             else:
                 self.GameState.num_in_hand += 1
                 p.in_hand = True
+                p.all_in = False
+
 
         self.GameState.hand_state = 0
 
-        #TODO: advance blinds to next non empty seat
+        # advance blinds
+        self.advanceBlinds()
+
+        # set the action appropriately this is done upon rounds of betting
+        # new hand places the game into waiting, a non betting round
+        #self.advanceAction(new_round=True)
 
         # reset table cards (This will publish the new gamestate)
         new_cards = [
@@ -229,6 +290,46 @@ class PokerGame(Node):
         ]
         self.set_parameters(new_cards)
 
+    def advanceBlinds(self):
+        """
+        set / rotate the dealer, sb, bb locations on a new hand.
+        if first hand, dealer is first player in active_players
+        otherwise advances by 1
+        """
+        if not self.started:
+            # set dealer to first player
+            for i, p in enumerate(self.GameState.active_players):
+                if p.in_hand:
+                    dealer = i
+                    break
+            self.started = True
+
+        else:
+            # increase dealer idx to next active player
+            dealer = self.next_active(self.GameState.blind_index[0])
+
+        sb = self.next_active(dealer)
+        bb = self.next_active(sb)
+
+        # update gamestate
+        self.GameState.blind_index = [dealer, sb, bb]
+        self.GameState.active_players[sb].bet_this_hand = self.GameState.big_blind/2
+        self.GameState.active_players[sb].stack -= self.GameState.big_blind/2
+        self.GameState.active_players[bb].bet_this_hand = self.GameState.big_blind
+        self.GameState.active_players[bb].stack -= self.GameState.big_blind
+        self.GameState.curr_bet = self.GameState.big_blind
+        self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
+        self.log("updated blinds")
+
+
+    def next_active(self, start_idx):
+        """
+        Return next active player
+        """
+        idx = (start_idx+1)% self.GameState.seats
+        while not self.GameState.active_players[idx].in_hand:
+            idx = (idx+1)% self.GameState.seats
+        return idx
         
 
     def playerTurn(self, request, response):
@@ -236,6 +337,8 @@ class PokerGame(Node):
         Service call for player to either bet, call, check.
         """
         action = request.action
+        if self.GameState.hand_state == 0 or self.GameState.hand_state == 5:
+            return
 
         curr_player = self.GameState.active_players[self.GameState.action_on]
         # TODO: check for conditions when stack hits 0
@@ -248,55 +351,45 @@ class PokerGame(Node):
                 self.log("Last player folded.")
                 # TODO: assign win
                 # put into waiting state
-                self.GameState = 5
+                self.GameState.hand_state = 5
         elif action == 'call':
-            # if i've already bet, find the difference
-            if curr_player.bet_this_hand > 0.0:
-                need_to_pay = self.GameState.curr_bet - curr_player.bet_this_hand
+            owed = self.GameState.curr_bet - curr_player.bet_this_hand
+            if owed <= 0:
+                self.log("check")
             else:
-                need_to_pay = self.GameState.curr_bet
-            # pay the needed amt
-            curr_player.bet_this_hand = self.GameState.curr_bet
-            curr_player.stack -= need_to_pay
-            self.GameState.pot += need_to_pay
+                if owed >= curr_player.stack:
+                    owed = curr_player.stack
+                    curr_player.all_in = True
+                    self.log("all in")
+            
+                # TODO: track per hand and per round betting?
+                curr_player.bet_this_hand += owed
+                curr_player.stack -= owed
+                self.GameState.pot += owed
+
 
         elif action == 'bet':
-            # set the new amount
-            self.GameState.curr_bet = request.amount
-            # now pay, just like a call
-            if curr_player.bet_this_hand > 0:
-                need_to_pay = self.GameState.curr_bet - curr_player.bet_this_hand
-            else:
-                need_to_pay = self.GameState.curr_bet
-            # pay the needed amt
-            curr_player.bet_this_hand = self.GameState.curr_bet
-            curr_player.stack -= need_to_pay
-            self.GameState.pot += need_to_pay
+            new_bet = request.amount
+            if new_bet < self.GameState.curr_bet:
+                self.log("Bet too small")
+                return response
+
+            owed = new_bet - curr_player.bet_this_hand
+            if owed > curr_player.stack:
+                self.log("All in")
+                owed = curr_player.stack
+                curr_player.all_in = True
+
+            curr_player.stack -= owed
+            curr_player.bet_this_hand += owed
+            self.GameState.pot += owed
+            self.GameState.curr_bet = new_bet
+
 
         self.GameState.num_actions += 1
 
         # advance the action
-        # TODO: THIS IS BROKEN
-        self.GameState.action_on += 1
-        if self.GameState.action_on > self.GameState.seats - 1:
-            self.GameState.action_on = 0
-
-        # go to next player that hasn't folded
-        found_next = self.GameState.active_players[self.GameState.action_on].in_hand
-        while not found_next:
-            self.GameState.action_on += 1
-            found_next = self.GameState.active_players[self.GameState.action_on].in_hand
-        
-
-        # Check to see if bets are all good
-        # not the best way method but it works
-        all_paid = True
-        for p in self.GameState.active_players:
-            if (p.in_hand) and (p.bet_this_hand != self.GameState.curr_bet):
-                all_paid = False
-        self.GameState.pot_good = all_paid
-        if all_paid:
-            self.log("ready for next card.")
+        self.advanceAction(new_round=False)
 
         # TODO: Assign winner here?
 

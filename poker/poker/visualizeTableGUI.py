@@ -77,7 +77,7 @@ class visualizeTableGUI(Node):
                         "blue_two":self.cards[7],
                         "gray_two":self.cards[8],
                         "red_action":self.cards[9],
-                        "blue_action":self.cards[9],}
+                        "blue_action":self.cards[10],}
 
         # face cards
         faces = [('k',4),('q',4),('j',4)]
@@ -232,26 +232,34 @@ class visualizeTableGUI(Node):
 
                     # draw cards
                     if p.in_hand:
-                        #self.log(f"p: {p.name} hs: {self.GameState.hand_state}")
                         state = self.GameState.hand_state
-                        if state == 1:
-                            # preflop
-                            if self.GameState.action_on == p.seat_pos and (not self.GameState.pot_good):
-                                hand = self.card_map["red_action"]
-                            else:
-                                hand = self.card_map["blue_two"]
-                        elif state == 0:
-                            # waiting state
+                        is_acting = (self.GameState.action_on == p.seat_pos)
+                        # Waiting for next hand?
+                        if state == 0:
                             hand = self.card_map["gray_two"]
-                        else:
-                            # hand in play
-                            if self.GameState.action_on == p.seat_pos and (not self.GameState.pot_good):
-                                hand = self.card_map["blue_action"]
+
+                        # Pre-flop: everyone shows blue by default
+                        elif state == 1:
+                            if self.GameState.pot_good:
+                                # bets are even, action player blends in
+                                hand = self.card_map["blue_two"]
                             else:
+                                # highlight the actor in red
+                                hand = self.card_map["red_action"] if is_acting else self.card_map["blue_two"]
+
+                        elif state == 5:
+                            # finished
+                            hand = self.card_map["blue_two"]
+
+                        # Flop/Turn/River: everyone shows red by default
+                        else:
+                            if self.GameState.pot_good:
                                 hand = self.card_map["red_two"]
-                            
+                            else:
+                                hand = self.card_map["blue_action"] if is_acting else self.card_map["red_two"]
+
                     else:
-                        # draw gray cards
+                        # folded or not seated
                         hand = self.card_map["gray_two"]
                     self.screen.blit(hand, hand.get_rect(center=self.player_locations[i]))
 
