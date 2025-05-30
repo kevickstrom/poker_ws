@@ -11,12 +11,12 @@ A visualizer window displays the state of the table--visible cards, players in t
 The last window is a collection of the other necessary nodes to run / automate.  
 
 Current progress:
-   Game is mostly complete via console UI manual control (cmd like inputs to override automation steps)  
+   One hand is playable via console UI manual control (cmd like inputs to override automation steps)  
    Working on configuring GoPro to recognize playing cards to update the visualizer with  
 
 Next steps:  
 * Finish Manual Control:  
-   Mostly done, but small additions still needed.  
+   Need to add win logic.  
 * Camera:  
    Filtering nodes to turn raw feed into several images, which can be used with edge detection etc to determine rank and suit  
 * Arduino player action puck:  
@@ -46,6 +46,7 @@ Next steps:
       - flop <card1> <card2> <card3>: this updates the flop param on the game node.  
       - turn <card>: this updates the turn card param on the game node.  
       - river <card>: this updates the river card param on the game node.
+      - win <playername>: NOT IMPLEMETED. this assigns a hand winner upon fold and at the finished state.
 
    - ### poker_game  
    `ros2 run poker poker_game`  
