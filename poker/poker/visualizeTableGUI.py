@@ -130,16 +130,39 @@ class visualizeTableGUI(Node):
 
         # x y coords to draw dealer, big blind, small blind
         self.blind_locations = [
-                (900, 180),     # seat 0 top center
-                (1200, 180),    # seat 1 top right
-                (1380, 200),    # seat 2 right upper
-                (1380, 375),    # seat 3 right lower
-                (1200, 410),    # seat 4 bottom right
-                (900, 410),     # seat 5 bottom center
-                (500, 410),     # seat 6 bottom left
-                (420, 375),     # seat 7 left lower
-                (420, 200),     # seat 8 left upper
-                (500, 180),     # seat 9 top left
+                (900, 200),     # seat 0 top center
+                (1200, 200),    # seat 1 top right
+                (1340, 220),    # seat 2 right upper
+                (1340, 355),    # seat 3 right lower
+                (1180, 390),    # seat 4 bottom right
+                (900, 390),     # seat 5 bottom center
+                (500, 390),     # seat 6 bottom left
+                (460, 355),     # seat 7 left lower
+                (460, 220),     # seat 8 left upper
+                (500, 200),     # seat 9 top left
+        ]
+
+        # x y coords to draw player bets
+        self.bet_locations = [
+                (900, 150),     # seat 0 top center
+                (1200, 150),    # seat 1 top right
+                (1400, 240),    # seat 2 right upper
+                (1400, 400),    # seat 3 right lower
+                (1200, 440),    # seat 4 bottom right
+                (900, 440),     # seat 5 bottom center
+                (500, 440),     # seat 6 bottom left
+                (410, 400),     # seat 7 left lower
+                (410, 240),     # seat 8 left upper
+                (500, 150),     # seat 9 top left
+        ]
+
+        self.state_text = [ 
+            "Waiting",
+            "Preflop",
+            "Flop",
+            "Turn",
+            "River",
+            "Finished"
         ]
 
 
@@ -162,6 +185,7 @@ class visualizeTableGUI(Node):
             #self.screen.fill(BACKGROUND)
             self.screen.blit(self.table_bg, (0,0))
             self.drawPlayers()
+            self.drawBets()
             self.drawCards()
             pygame.display.update()
 
@@ -209,19 +233,20 @@ class visualizeTableGUI(Node):
                     # draw cards
                     if p.in_hand:
                         #self.log(f"p: {p.name} hs: {self.GameState.hand_state}")
-                        if (self.GameState.hand_state == 1):
-                            # preflop and finished
-                            if self.GameState.action_on == i:
-                                hand = self.card_map["blue_action"]
+                        state = self.GameState.hand_state
+                        if state == 1:
+                            # preflop
+                            if self.GameState.action_on == p.seat_pos and (not self.GameState.pot_good):
+                                hand = self.card_map["red_action"]
                             else:
                                 hand = self.card_map["blue_two"]
-                        elif self.GameState.hand_state == 0:
+                        elif state == 0:
                             # waiting state
                             hand = self.card_map["gray_two"]
                         else:
                             # hand in play
-                            if self.GameState.action_on == i:
-                                hand = self.card_map["red_action"]
+                            if self.GameState.action_on == p.seat_pos and (not self.GameState.pot_good):
+                                hand = self.card_map["blue_action"]
                             else:
                                 hand = self.card_map["red_two"]
                             
@@ -229,6 +254,21 @@ class visualizeTableGUI(Node):
                         # draw gray cards
                         hand = self.card_map["gray_two"]
                     self.screen.blit(hand, hand.get_rect(center=self.player_locations[i]))
+
+    def drawBets(self):
+        """
+        Draws the player's bets on the table
+        """
+        if self.GameState is not None:
+            if self.GameState.hand_state > 0:
+                # preflop and on:
+                for i, p in enumerate(self.GameState.active_players):
+                    if p.name != "Empty":
+                        bet_surf = self.player_font.render(f"{p.bet_this_hand:.2f}", True, self.stack_color)
+                        bet_rect = bet_surf.get_rect(center=(self.bet_locations[i]))
+                        self.screen.blit(bet_surf, bet_rect)
+
+
 
     def drawCards(self):
         """
@@ -258,9 +298,14 @@ class visualizeTableGUI(Node):
                     card_img = self.card_map[card_str]
                     self.screen.blit(card_img, deck.get_rect(center=(deck_x+i*CARD_W/2+CARD_W, deck_y)))
 
+            # draw hand state
+            state_surf = self.player_font.render(self.state_text[self.GameState.hand_state], True, (0, 0, 0))
+            state_rect = state_surf.get_rect(topleft = (deck_x-(CARD_W/3), deck_y+CARD_W/2))
+            self.screen.blit(state_surf, state_rect)
+
             # draw pot
             pot_surf = self.player_font.render(f"Pot: {self.GameState.pot:.2f}", True, self.stack_color)
-            pot_rect = pot_surf.get_rect(topleft=(deck_x-(CARD_W/3), deck_y+CARD_W/2))
+            pot_rect = pot_surf.get_rect(topleft=(deck_x-(CARD_W/3) + 100, deck_y+CARD_W/2))
             self.screen.blit(pot_surf, pot_rect)
         
     def log(self, msg):

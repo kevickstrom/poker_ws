@@ -159,6 +159,9 @@ class PokerGame(Node):
             self.log("Starting hand...")
             self.newHand()
             self.GameState.hand_state = self.GameState.hand_state + 1
+
+            # TODO: Set action to UTG
+
         # everyone folded so assign win
         elif request.folded:
             # TODO: Assign win
@@ -182,6 +185,9 @@ class PokerGame(Node):
             self.GameState.hand_state = self.GameState.hand_state + 1
             self.GameState.pot_good = False
             self.log(f"Advanced to new state: {self.GameState.hand_state}")
+        else:
+            # TODO Set action to BB or next relevant player
+            pass
         self.log(f"Post advance state: {self.GameState.hand_state}")
         self.log(f"Table Cards: {self.GameState.table_cards}")
         self.pubGame.publish(self.GameState)
@@ -194,9 +200,13 @@ class PokerGame(Node):
         self.log("Resetting for next hand...")
         # reset pot
         self.GameState.pot = self.GameState.big_blind + self.GameState.big_blind/2.0
+        # set blinds
+        # if not started yet, first player in active players
+        # otherwise advance blinds
         # get money from blind players
 
         # reset table cards
+
         #self.GameState.table_cards = []
         self.GameState.num_actions = 0
         self.GameState.num_in_hand = 0
@@ -266,7 +276,7 @@ class PokerGame(Node):
         self.GameState.num_actions += 1
 
         # advance the action
-        
+        # TODO: THIS IS BROKEN
         self.GameState.action_on += 1
         if self.GameState.action_on > self.GameState.seats - 1:
             self.GameState.action_on = 0
