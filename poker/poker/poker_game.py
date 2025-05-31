@@ -166,7 +166,7 @@ class PokerGame(Node):
 
         # everyone folded so assign win
         elif request.folded:
-            # TODO: Assign win
+            # winner assigned elsewhere
             # self.GameState.winner =
             self.newHand()
         # advance to the next stage
@@ -189,10 +189,13 @@ class PokerGame(Node):
                 return response
             # check if river -> finished
             elif self.GameState.hand_state == 4:
-                pass
+                if request.winner == 'none':
+                    self.log("Must assign win before finishing hand!")
+                    return response
+                
                 # action on the river has just finished, enter finished state after selecting winner
-                # TODO: assign win
-                # self.GameState.winner =
+                self.GameState.winner = request.winner
+                self.win(self.GameState.winner)
 
             self.GameState.hand_state = self.GameState.hand_state + 1
             self.GameState.pot_good = False
@@ -208,6 +211,16 @@ class PokerGame(Node):
         self.log(f" action_on = {bad!r} (type={type(bad)})")
         self.pubGame.publish(self.GameState)
         return response
+
+    def win(self, pname:str):
+        """
+        handles winning
+        """
+        for usr in self.GameState.active_players:
+            if usr.name == pname:
+                p = usr
+                break
+        p.stack += self.GameState.pot
 
     def advanceAction(self, new_round = False):
         """
@@ -250,7 +263,10 @@ class PokerGame(Node):
             if p.in_hand and p.bet_this_hand != self.GameState.curr_bet:
                 all_paid = False
                 break
-        self.GameState.pot_good = all_paid
+        if self.GameState.num_actions < self.GameState.num_in_hand:
+            self.GameState.pot_good = False
+        else:
+            self.GameState.pot_good = all_paid
         if all_paid:
             self.log("Pot is good.")
 
@@ -350,7 +366,11 @@ class PokerGame(Node):
                 self.GameState.pot_good = True
                 self.log("Last player folded.")
                 # TODO: assign win
-                # put into waiting state
+                # put into finished state
+                for p in self.GameState.active_players:
+                    if p.in_hand:
+                        self.win(p.name)
+                        break
                 self.GameState.hand_state = 5
         elif action == 'call':
             owed = self.GameState.curr_bet - curr_player.bet_this_hand

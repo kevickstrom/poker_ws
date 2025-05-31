@@ -310,7 +310,7 @@ class PokerConsole(Node):
         # advance the hand_state
         elif cmd == "next":
             if len(args) < 2:
-                self.log("USAGE: next <end_by_fold> <force_advance>")
+                self.log("USAGE: next <end_by_fold> <force_advance> <winner>")
                 return
             # if hand ended by everyone folding
             if args[0].lower() == 't' or args[0].lower() == 'true':
@@ -322,9 +322,13 @@ class PokerConsole(Node):
                 force_advance = True
             else:
                 force_advance = False
-            cards = []
 
-            self.advanceHand_request(folded, force_advance)
+            if len(args) == 3:
+                winner = args[2]
+            else:
+                winner = 'none'
+
+            self.advanceHand_request(folded, force_advance, winner)
 
 
         else:
@@ -376,13 +380,14 @@ class PokerConsole(Node):
         self.addPlayer_response = self.addPlayer_client.call_async(addPlayer)
         self.log(f"Requested to add player {newPlayer.name}")
 
-    def advanceHand_request(self, folded: bool, force_advance):
+    def advanceHand_request(self, folded: bool, force_advance, winner:str):
         """
         Service request to advance the hand. If force_advance, will ignore current state of betting.
         """
         adv = AdvanceHand.Request()
         adv.folded = folded
         adv.force_advance = force_advance
+        adv.winner = winner
 
         self.advanceHand_response = self.advanceHand_client.call_async(adv)
         self.log("Requesting to advance the hand")
