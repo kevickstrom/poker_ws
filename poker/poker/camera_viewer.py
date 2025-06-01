@@ -24,16 +24,32 @@ class CameraViewer(Node):
     def __init__(self):
         super().__init__("camera_viewer")
         self.logging = True
-
+        self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
+        cv2.namedWindow("Camera View", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("Camera View", 640, 480)
         self.bridge = CvBridge()
-        self.imgSub = self.create_subscription(Image, "raw_camera", self.showImg,1)
+        sensor_qos = QoSProfile(
+            reliability = QoSReliabilityPolicy.BEST_EFFORT,
+            history = QoSHistoryPolicy.KEEP_LAST,
+            depth = 10
+        )
+        self.imgSub = self.create_subscription(Image, "raw_camera", self.showImg,sensor_qos)
 
     def showImg(self, imgmsg):
         """
         Display the image
         """
-        openCVImage = self.bridge.imgmsg_to_cv2(imgmsg)
-        cv2.imshow("Camera View", openCVImage)
+        try:
+            cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="bgr8")
+        except CvBridgeError as e:
+            self.get_logger().error(f"CV Bridge error: {e}")
+            return
+
+        if not cv2.getWindowProperty("Camera View", cv2.WND_PROP_VISIBLE) >= 1:
+            cv2.namedWindow("Camera View", cv2.WINDOW_NORMAL)
+            cv2.resizeWindow("Camera View", 640, 480)
+
+        cv2.imshow("Camera View", cv_img)
         cv2.waitKey(1)
 
     def log(self, msg):

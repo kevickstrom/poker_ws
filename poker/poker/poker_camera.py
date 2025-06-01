@@ -28,6 +28,7 @@ class CameraPublisher(Node):
         self.height = 1080
         self.fps = 30
         self.logging = True
+        self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
 
         # TODO: make this a service call to connect?
         self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
@@ -37,7 +38,7 @@ class CameraPublisher(Node):
 
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        self.cap.set(cv2.CAP_PROP_PROP_FPS, self.fps)
+        self.cap.set(cv2.CAP_PROP_FPS, self.fps)
 
         sensor_qos = QoSProfile(
             reliability = QoSReliabilityPolicy.BEST_EFFORT,
@@ -61,6 +62,7 @@ class CameraPublisher(Node):
         msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
         msg.header.stamp = self.get_clock().now().to_msg()
         self.imgPub.publish(msg)
+        #self.log("fram pub")
 
     def destroy_node(self):
         """
@@ -82,9 +84,9 @@ class CameraPublisher(Node):
             self.pubLog.publish(newmsg)
         self.get_logger().info(msg)
 
-def main():
+def main(args=None):
     rclpy.init(args=args)
-    node = CameraPublisher
+    node = CameraPublisher()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
