@@ -2,6 +2,8 @@
 
 <img src="poker/assets/ss_2.png"  width="50%"/>  
   
+<img src="poker/assets/firstThresh.png"  width="50%"/>  
+
 <img src="poker/assets/node_sketch.jpg"  width="50%"/>  
 
 Using ROS2, this will visualize the current state of a poker table, allowing for easy game management and tracking.  

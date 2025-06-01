@@ -14,7 +14,7 @@ import rclpy
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from rclpy.node import Node
 
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
 from sensor_msgs.msg import Image
@@ -33,14 +33,17 @@ class CameraViewer(Node):
             history = QoSHistoryPolicy.KEEP_LAST,
             depth = 10
         )
-        self.imgSub = self.create_subscription(Image, "raw_camera", self.showImg,sensor_qos)
+        self.imgSub = self.create_subscription(Image, "edit_image", self.showImg, sensor_qos)
 
     def showImg(self, imgmsg):
         """
         Display the image
         """
         try:
-            cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="bgr8")
+            # color
+            # cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="bgr8")
+            # bw
+            cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding='mono8')
         except CvBridgeError as e:
             self.get_logger().error(f"CV Bridge error: {e}")
             return

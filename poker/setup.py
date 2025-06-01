@@ -29,7 +29,8 @@ setup(
             'visualizeTable = poker.visualizeTableGUI:main',
             'poker_game = poker.poker_game:createGame',
             'poker_camera = poker.poker_camera:main',
-            'camera_viewer = poker.camera_viewer:main'
+            'camera_viewer = poker.camera_viewer:main',
+            'img_manip = poker.image_manip:main'
         ],
     },
 )
