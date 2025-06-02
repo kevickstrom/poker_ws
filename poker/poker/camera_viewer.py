@@ -41,9 +41,10 @@ class CameraViewer(Node):
         """
         try:
             # color
-            # cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="bgr8")
+            cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="bgr8")
+            #cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="8UC1")
             # bw
-            cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding='mono8')
+            #cv_img = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding='mono8')
         except CvBridgeError as e:
             self.get_logger().error(f"CV Bridge error: {e}")
             return
