@@ -23,24 +23,30 @@ class ArduinoCommNode(Node):
         self.GameState = None
         self.last_state = 0
         self.last_action = -1
+        self.logging = True
 
         self.newTurn_client = self.create_client(PlayerTurn, 'player_turn')
+        self.pubLog = self.create_publisher(GameLog, 'game_log', 10)
         self.subGame = self.create_subscription(GameState, 'game_state', self.readGameState, 10)
 
-        while not self.cli.wait_for_service(timeout_sec=1.0):
+        while not self.newTurn_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().warn('Waiting for player_turn service...')
 
         self.timer = self.create_timer(0.5, self.timer_callback)
 
 
     def timer_callback(self):
-        if self.GameState is None:
+        
+        if self.GameState is not None:
             # update max bet threshold if in betting stage
-            if self.Gamestate.hand_state > 0 and self.last_action != self.GameState.action_on:
-                self.send_max_value_to_arduino(self.Gamestate.active_players[self.Gamestate.action_on].stack)
+            
+            if self.GameState.hand_state > 0 and self.last_action != self.GameState.action_on:
+                self.send_max_value_to_arduino(self.GameState.active_players[self.GameState.action_on].stack)
                 # update last action so we dont send serial again and just listen until action selected
                 self.last_action = self.GameState.action_on
-            return
+            
+            
+        
         if self.ser.in_waiting:
             line = self.ser.readline().decode('utf-8').strip()
             self.log(f"Arduino: {line}")
@@ -53,7 +59,8 @@ class ArduinoCommNode(Node):
                     action = {1: "fold", 2: "call", 3: "bet"}.get(state, "unknown")
 
                     if action != "unknown":
-                        self.call_bet_service(action, size)
+                        self.send_player_turn(action, size)
+                        self.log(f"Action {action} size {size}")
                     else:
                         self.log(f"Unknown state: {state}")
                 except Exception as e:
@@ -64,24 +71,28 @@ class ArduinoCommNode(Node):
         request.action = action
         request.amount = amount
 
-        future = self.cli.call_async(request)
+        future = self.newTurn_client.call_async(request)
 
     def send_max_value_to_arduino(self, val: float):
-    try:
-        message = f"{val:.2f}\n"
-        self.ser.write(message.encode('utf-8'))
-        self.log(f"Sent to Arduino: {message.strip()}")
-    except Exception as e:
-        self.log(f"Serial write error: {e}")
+        """
+        Send a float over serial ended with newline
+        """
+        try:
+            message = f"{val:.2f}\n"
+            self.ser.write(message.encode('utf-8'))
+            self.log(f"Sent to Arduino: {message.strip()}")
+        except Exception as e:
+            self.log(f"Serial write error: {e}")
 
     def readGameState(self, msg: GameState):
         """
         Subscriber callback to the GameState topic
         Update last vars
         """
-        self.last_state = self.GameState.hand_state
-        if self.last_state > 0:
-            self.last_action = self.GameState.action_on
+        if self.GameState is not None:
+            self.last_state = self.GameState.hand_state
+            if self.last_state > 0:
+                self.last_action = self.GameState.action_on
         self.GameState = msg
 
     def log(self, msg):

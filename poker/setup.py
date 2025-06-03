@@ -30,7 +30,8 @@ setup(
             'poker_game = poker.poker_game:createGame',
             'poker_camera = poker.poker_camera:main',
             'camera_viewer = poker.camera_viewer:main',
-            'img_manip = poker.image_manip:main'
+            'img_manip = poker.image_manip:main',
+            'poker_arduino = poker.poker_arduino:main'
         ],
     },
 )

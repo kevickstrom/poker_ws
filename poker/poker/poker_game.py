@@ -267,7 +267,6 @@ class PokerGame(Node):
             self.GameState.pot_good = False
         else:
             self.GameState.pot_good = all_paid
-        if all_paid:
             self.log("Pot is good.")
 
 
