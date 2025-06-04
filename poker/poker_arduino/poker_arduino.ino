@@ -18,6 +18,12 @@ const int size_pin = A4;
 float size;
 float rounded;
 float maxBet = 20.0;
+bool done = false;
+
+bool buttonState = LOW;
+bool lastReading = LOW; 
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 50;  // milliseconds
 
 // 0 waiting, 1 fold, 2 call, 3 bet, 4 done
 int state = 0;
@@ -51,7 +57,7 @@ void setup() {
   updateWithDelays, leadingZeros, disableDecPoint);
   sevseg.setBrightness(90);
 
-  strcpy(testStrings[0], ". . . .");
+  strcpy(testStrings[0], "----");
   strcpy(testStrings[1], "FOLD");
   strcpy(testStrings[2], "CALL");
   strcpy(testStrings[3], "BET");
@@ -75,12 +81,13 @@ void loop() {
     String incoming = Serial.readStringUntil('\n');
     float new_max = incoming.toFloat();
     if (new_max > 0.0 && new_max <= 100.0) {  // max bet 100
-      max_bet = new_max;
+      maxBet = new_max;
     }
   }
   
   // handle buttons and send user input when done button is pressed
   if (state == 0){
+    done = false;
     // check for fold, call, bet
     if (digitalRead(fold_pin)){
       state = 1;
@@ -113,16 +120,28 @@ void loop() {
       //size = analogRead(size_pin);
     }
   }
-  if (digitalRead(done_pin)){
-    // send data to ROS
-    state = 4;
-    old_time = millis();
+  int reading = digitalRead(done_pin);
 
-    Serial.print("state:");
-    Serial.print(state);
-    Serial.print(",size:");
-    Serial.println(size, 2);  // 2 decimal places
+  // If the button state changed, reset the debounce timer
+  if (reading != lastReading) {
+    lastDebounceTime = millis();
   }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      // now detect rising edge
+      if (buttonState == HIGH) {
+        Serial.print("state:");
+        Serial.print(state);
+        Serial.print(",size:");
+        Serial.println(rounded, 2);
+        state = 4;
+      }
+    }
+  }
+  lastReading = reading;
 
   // write to 7 segment display
   if (state != 3){
