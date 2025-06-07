@@ -31,7 +31,8 @@ setup(
             'poker_camera = poker.poker_camera:main',
             'camera_viewer = poker.camera_viewer:main',
             'img_manip = poker.image_manip:main',
-            'poker_arduino = poker.poker_arduino:main'
+            'poker_arduino = poker.poker_arduino:main',
+            'save_game = poker.save_game:main'
         ],
     },
 )
